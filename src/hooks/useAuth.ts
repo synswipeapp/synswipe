@@ -1,58 +1,95 @@
 import { trpc } from "@/providers/trpc";
-import { useCallback, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router";
-import { LOGIN_PATH } from "@/const";
+import { useCallback, useMemo } from "react";
 
-type UseAuthOptions = {
-  redirectOnUnauthenticated?: boolean;
-  redirectPath?: string;
-};
+export interface UnifiedUser {
+  id: number;
+  name: string;
+  email?: string | null;
+  avatar?: string | null;
+  role: string;
+  creatorMode?: boolean;
+  bio?: string | null;
+  handle?: string | null;
+}
 
-export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = LOGIN_PATH } =
-    options ?? {};
-
-  const navigate = useNavigate();
-
+export function useAuth() {
   const utils = trpc.useUtils();
 
+  // Try OAuth first
   const {
-    data: user,
-    isLoading,
-    error,
-    refetch,
+    data: oauthUser,
+    isLoading: oauthLoading,
   } = trpc.auth.me.useQuery(undefined, {
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
 
+  // Fall back to local auth
+  const {
+    data: localUser,
+    isLoading: localLoading,
+  } = trpc.localAuth.me.useQuery(undefined, {
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+    enabled: !oauthUser,
+  });
+
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: async () => {
       await utils.invalidate();
-      navigate(redirectPath);
     },
   });
 
-  const logout = useCallback(() => logoutMutation.mutate(), [logoutMutation]);
+  const logout = useCallback(() => {
+    // Always clear local auth token
+    localStorage.removeItem("local_auth_token");
+    // Always call OAuth logout
+    logoutMutation.mutate();
+    // Refresh the page to clear all state
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  }, [logoutMutation]);
 
-  useEffect(() => {
-    if (redirectOnUnauthenticated && !isLoading && !user) {
-      const currentPath = window.location.pathname;
-      if (currentPath !== redirectPath) {
-        navigate(redirectPath);
-      }
+  const user: UnifiedUser | null = useMemo(() => {
+    if (oauthUser) {
+      return {
+        id: oauthUser.id,
+        name: oauthUser.name ?? "User",
+        email: oauthUser.email,
+        avatar: oauthUser.avatar,
+        role: oauthUser.role,
+        creatorMode: oauthUser.creatorMode ?? false,
+        bio: oauthUser.bio,
+        handle: oauthUser.handle,
+      };
     }
-  }, [redirectOnUnauthenticated, isLoading, user, navigate, redirectPath]);
+    if (localUser) {
+      return {
+        id: localUser.id,
+        name: localUser.name ?? localUser.username ?? "User",
+        email: null,
+        avatar: localUser.avatar,
+        role: localUser.role,
+        creatorMode: localUser.creatorMode ?? false,
+        bio: localUser.bio,
+        handle: localUser.handle,
+      };
+    }
+    return null;
+  }, [oauthUser, localUser]);
+
+  const isLoading = oauthLoading || (localLoading && !oauthUser);
 
   return useMemo(
     () => ({
-      user: user ?? null,
+      user,
       isAuthenticated: !!user,
-      isLoading: isLoading || logoutMutation.isPending,
-      error,
+      isLoading,
+      isAdmin: user?.role === "admin",
       logout,
-      refresh: refetch,
+      refresh: () => utils.invalidate(),
     }),
-    [user, isLoading, logoutMutation.isPending, error, logout, refetch],
+    [user, isLoading, logout, utils],
   );
 }
