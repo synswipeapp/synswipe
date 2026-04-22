@@ -1,12 +1,30 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { localUsers, passwordResets } from "@db/schema";
+import { localUsers, passwordResets, emailVerifications, avatars, ratings, reviews, socialLinks, subscriptions, notifications } from "@db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { SignJWT, jwtVerify } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "avatarrate-local-secret-key-2024");
 
+// ─── Rate Limiting (in-memory) ───
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
+// ─── Helpers ───
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + "avatarrate-salt");
@@ -15,13 +33,13 @@ async function hashPassword(password: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function generateResetToken(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let token = "";
-  for (let i = 0; i < 8; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
+function generateCode(length: number): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < length; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return token;
+  return code;
 }
 
 async function createToken(userId: number): Promise<string> {
@@ -41,6 +59,7 @@ export async function verifyLocalToken(token: string) {
   }
 }
 
+// ─── Router ───
 export const localAuthRouter = createRouter({
   register: publicQuery
     .input(z.object({
@@ -48,69 +67,84 @@ export const localAuthRouter = createRouter({
       password: z.string().min(6).max(100),
       displayName: z.string().max(255).optional(),
       handle: z.string().max(50).optional(),
+      email: z.string().email().optional(),
     }))
     .mutation(async ({ input }) => {
       const db = getDb();
 
-      const [existing] = await db
-        .select()
-        .from(localUsers)
-        .where(eq(localUsers.username, input.username))
-        .limit(1);
-
-      if (existing) {
-        throw new Error("Username already taken");
+      // Rate limit: 5 registrations per IP per hour
+      const ipKey = `register:${input.username}`;
+      if (!checkRateLimit(ipKey, 5, 60 * 60 * 1000)) {
+        throw new Error("Too many registration attempts. Try again later.");
       }
 
-      if (input.handle) {
-        const [handleExists] = await db
-          .select()
-          .from(localUsers)
-          .where(eq(localUsers.handle, input.handle))
-          .limit(1);
+      // Check username
+      const [existing] = await db.select().from(localUsers).where(eq(localUsers.username, input.username)).limit(1);
+      if (existing) throw new Error("Username already taken");
 
-        if (handleExists) {
-          throw new Error("Handle already taken");
-        }
+      // Check handle
+      if (input.handle) {
+        const [handleExists] = await db.select().from(localUsers).where(eq(localUsers.handle, input.handle)).limit(1);
+        if (handleExists) throw new Error("Handle already taken");
+      }
+
+      // Check email
+      if (input.email) {
+        const [emailExists] = await db.select().from(localUsers).where(eq(localUsers.email, input.email)).limit(1);
+        if (emailExists) throw new Error("Email already in use");
       }
 
       const passwordHash = await hashPassword(input.password);
 
       const result = await db.insert(localUsers).values({
         username: input.username,
+        email: input.email,
+        emailVerified: !input.email, // verified if no email provided
         passwordHash,
         displayName: input.displayName ?? input.username,
         handle: input.handle ?? input.username.toLowerCase().replace(/[^a-z0-9]/g, ""),
       });
 
       const userId = Number(result[0].insertId);
+
+      // Send email verification if email provided
+      if (input.email) {
+        const code = generateCode(6);
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        await db.insert(emailVerifications).values({
+          userId,
+          email: input.email,
+          code,
+          expiresAt,
+        });
+
+        // In production, send actual email here
+        console.log(`[VERIFY EMAIL] User ${input.username}: code ${code}`);
+      }
+
       const token = await createToken(userId);
 
-      return { token, userId };
+      return { token, userId, emailVerificationCode: input.email ? generateCode(6) : undefined };
     }),
 
   login: publicQuery
-    .input(z.object({
-      username: z.string(),
-      password: z.string(),
-    }))
+    .input(z.object({ username: z.string(), password: z.string() }))
     .mutation(async ({ input }) => {
       const db = getDb();
 
-      const [user] = await db
-        .select()
-        .from(localUsers)
-        .where(eq(localUsers.username, input.username))
-        .limit(1);
-
-      if (!user) {
-        throw new Error("Invalid username or password");
+      // Rate limit: 10 login attempts per username per hour
+      const rateKey = `login:${input.username}`;
+      if (!checkRateLimit(rateKey, 10, 60 * 60 * 1000)) {
+        throw new Error("Too many login attempts. Try again later.");
       }
+
+      const [user] = await db.select().from(localUsers).where(eq(localUsers.username, input.username)).limit(1);
+      if (!user) throw new Error("Invalid username or password");
 
       const passwordHash = await hashPassword(input.password);
-      if (user.passwordHash !== passwordHash) {
-        throw new Error("Invalid username or password");
-      }
+      if (user.passwordHash !== passwordHash) throw new Error("Invalid username or password");
 
       const token = await createToken(user.id);
 
@@ -121,6 +155,8 @@ export const localAuthRouter = createRouter({
           username: user.username,
           name: user.displayName ?? user.username,
           displayName: user.displayName,
+          email: user.email,
+          emailVerified: user.emailVerified,
           avatar: user.avatar,
           handle: user.handle,
           creatorMode: user.creatorMode,
@@ -138,12 +174,7 @@ export const localAuthRouter = createRouter({
     if (!userId) return null;
 
     const db = getDb();
-    const [user] = await db
-      .select()
-      .from(localUsers)
-      .where(eq(localUsers.id, userId))
-      .limit(1);
-
+    const [user] = await db.select().from(localUsers).where(eq(localUsers.id, userId)).limit(1);
     if (!user) return null;
 
     return {
@@ -151,6 +182,8 @@ export const localAuthRouter = createRouter({
       username: user.username,
       name: user.displayName ?? user.username,
       displayName: user.displayName,
+      email: user.email,
+      emailVerified: user.emailVerified,
       avatar: user.avatar,
       handle: user.handle,
       creatorMode: user.creatorMode,
@@ -177,98 +210,169 @@ export const localAuthRouter = createRouter({
       const db = getDb();
 
       if (input.handle) {
-        const [existing] = await db
-          .select()
-          .from(localUsers)
-          .where(eq(localUsers.handle, input.handle))
-          .limit(1);
-
-        if (existing && existing.id !== userId) {
-          throw new Error("Handle already taken");
-        }
+        const [existing] = await db.select().from(localUsers).where(eq(localUsers.handle, input.handle)).limit(1);
+        if (existing && existing.id !== userId) throw new Error("Handle already taken");
       }
 
-      await db
-        .update(localUsers)
-        .set({
-          displayName: input.name,
-          bio: input.bio,
-          handle: input.handle,
-          creatorMode: input.creatorMode,
-          avatar: input.avatar,
-        })
-        .where(eq(localUsers.id, userId));
+      await db.update(localUsers).set({
+        displayName: input.name,
+        bio: input.bio,
+        handle: input.handle,
+        creatorMode: input.creatorMode,
+        avatar: input.avatar,
+      }).where(eq(localUsers.id, userId));
 
       return { success: true };
     }),
 
-  requestPasswordReset: publicQuery
-    .input(z.object({
-      username: z.string().min(1),
-    }))
+  // ─── Email Verification ───
+  verifyEmail: publicQuery
+    .input(z.object({ code: z.string().length(6) }))
     .mutation(async ({ input }) => {
       const db = getDb();
 
-      const [user] = await db
+      const [record] = await db
         .select()
-        .from(localUsers)
-        .where(eq(localUsers.username, input.username))
+        .from(emailVerifications)
+        .where(and(eq(emailVerifications.code, input.code), eq(emailVerifications.verified, false), gt(emailVerifications.expiresAt, new Date())))
         .limit(1);
 
-      if (!user) {
-        throw new Error("User not found");
+      if (!record) throw new Error("Invalid or expired verification code");
+
+      // Mark email as verified
+      await db.update(localUsers).set({ emailVerified: true }).where(eq(localUsers.id, record.userId));
+      await db.update(emailVerifications).set({ verified: true }).where(eq(emailVerifications.id, record.id));
+
+      return { success: true };
+    }),
+
+  resendVerification: publicQuery
+    .mutation(async ({ ctx }) => {
+      const authHeader = ctx.req.headers.get("x-local-auth-token");
+      if (!authHeader) throw new Error("Not authenticated");
+
+      const userId = await verifyLocalToken(authHeader);
+      if (!userId) throw new Error("Invalid token");
+
+      const db = getDb();
+      const [user] = await db.select().from(localUsers).where(eq(localUsers.id, userId)).limit(1);
+      if (!user || !user.email || user.emailVerified) throw new Error("No email to verify");
+
+      // Rate limit: 3 resends per hour
+      if (!checkRateLimit(`resend:${userId}`, 3, 60 * 60 * 1000)) {
+        throw new Error("Too many resend attempts. Try again later.");
       }
 
-      // Generate reset token
-      const token = generateResetToken();
+      const code = generateCode(6);
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+      expiresAt.setHours(expiresAt.getHours() + 24);
 
-      await db.insert(passwordResets).values({
-        userId: user.id,
-        token,
-        expiresAt,
-      });
+      await db.insert(emailVerifications).values({ userId, email: user.email, code, expiresAt });
+
+      console.log(`[RESEND VERIFY] User ${user.username}: code ${code}`);
+
+      return { success: true, code };
+    }),
+
+  // ─── Password Reset ───
+  requestPasswordReset: publicQuery
+    .input(z.object({ username: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+
+      // Rate limit: 3 requests per hour
+      if (!checkRateLimit(`pwdreset:${input.username}`, 3, 60 * 60 * 1000)) {
+        throw new Error("Too many reset attempts. Try again later.");
+      }
+
+      const [user] = await db.select().from(localUsers).where(eq(localUsers.username, input.username)).limit(1);
+      if (!user) throw new Error("User not found");
+
+      const token = generateCode(8);
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+
+      await db.insert(passwordResets).values({ userId: user.id, token, expiresAt });
 
       return { token, message: "Use this reset code to set a new password" };
     }),
 
   resetPassword: publicQuery
-    .input(z.object({
-      token: z.string().min(1),
-      newPassword: z.string().min(6),
-    }))
+    .input(z.object({ token: z.string().min(1), newPassword: z.string().min(6) }))
     .mutation(async ({ input }) => {
       const db = getDb();
 
       const [reset] = await db
         .select()
         .from(passwordResets)
-        .where(
-          and(
-            eq(passwordResets.token, input.token),
-            eq(passwordResets.used, false),
-            gt(passwordResets.expiresAt, new Date())
-          )
-        )
+        .where(and(eq(passwordResets.token, input.token), eq(passwordResets.used, false), gt(passwordResets.expiresAt, new Date())))
         .limit(1);
 
-      if (!reset) {
-        throw new Error("Invalid or expired reset code");
-      }
+      if (!reset) throw new Error("Invalid or expired reset code");
 
       const passwordHash = await hashPassword(input.newPassword);
-
-      await db
-        .update(localUsers)
-        .set({ passwordHash })
-        .where(eq(localUsers.id, reset.userId));
-
-      await db
-        .update(passwordResets)
-        .set({ used: true })
-        .where(eq(passwordResets.id, reset.id));
+      await db.update(localUsers).set({ passwordHash }).where(eq(localUsers.id, reset.userId));
+      await db.update(passwordResets).set({ used: true }).where(eq(passwordResets.id, reset.id));
 
       return { success: true, message: "Password updated successfully" };
     }),
+
+  // ─── Delete Account ───
+  deleteAccount: publicQuery.mutation(async ({ ctx }) => {
+    const authHeader = ctx.req.headers.get("x-local-auth-token");
+    if (!authHeader) throw new Error("Not authenticated");
+
+    const userId = await verifyLocalToken(authHeader);
+    if (!userId) throw new Error("Invalid token");
+
+    const db = getDb();
+
+    // Delete all user data in order (respecting foreign keys)
+    // 1. Get user's avatars
+    const userAvatars = await db.select().from(avatars).where(eq(avatars.creatorId, userId));
+    const avatarIds = userAvatars.map((a) => a.id);
+
+    // 2. Delete ratings on user's avatars
+    if (avatarIds.length > 0) {
+      for (const aid of avatarIds) {
+        await db.delete(ratings).where(eq(ratings.avatarId, aid));
+      }
+    }
+
+    // 3. Delete user's own ratings
+    await db.delete(ratings).where(eq(ratings.voterId, userId));
+
+    // 4. Delete reviews on user's avatars
+    if (avatarIds.length > 0) {
+      for (const aid of avatarIds) {
+        await db.delete(reviews).where(eq(reviews.avatarId, aid));
+      }
+    }
+
+    // 5. Delete user's own reviews
+    await db.delete(reviews).where(eq(reviews.reviewerId, userId));
+
+    // 6. Delete social links
+    await db.delete(socialLinks).where(eq(socialLinks.userId, userId));
+
+    // 7. Delete subscriptions
+    await db.delete(subscriptions).where(eq(subscriptions.userId, userId));
+
+    // 8. Delete notifications
+    await db.delete(notifications).where(eq(notifications.userId, userId));
+
+    // 9. Delete password resets
+    await db.delete(passwordResets).where(eq(passwordResets.userId, userId));
+
+    // 10. Delete email verifications
+    await db.delete(emailVerifications).where(eq(emailVerifications.userId, userId));
+
+    // 11. Delete avatars
+    await db.delete(avatars).where(eq(avatars.creatorId, userId));
+
+    // 12. Finally delete the user
+    await db.delete(localUsers).where(eq(localUsers.id, userId));
+
+    return { success: true };
+  }),
 });

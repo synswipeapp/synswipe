@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router'
 import { Bell, Flame, Snowflake, MessageCircle, Star, Flag } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/components/ToastProvider'
 import ReportModal from '@/components/ReportModal'
 
 const SWIPE_THRESHOLD = 120
@@ -337,7 +338,16 @@ export default function Discover() {
   const [showRatingSheet, setShowRatingSheet] = useState(false)
   const [reportAvatarId, setReportAvatarId] = useState<number | null>(null)
   const [showReportModal, setShowReportModal] = useState(false)
+  const { showToast } = useToast()
   const utils = trpc.useUtils()
+
+  // Welcome toast on first visit after signup
+  useState(() => {
+    if (sessionStorage.getItem('show_welcome') === 'true') {
+      showToast('Welcome to SynSwipe! Start swiping 🔥', 'success')
+      sessionStorage.removeItem('show_welcome')
+    }
+  })
 
   const handleStyleChange = (s: StyleFilter) => {
     setStyleFilter(s)

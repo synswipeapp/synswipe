@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router'
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Mail } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 
 export default function Login() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -24,7 +25,14 @@ export default function Login() {
   const registerMutation = trpc.localAuth.register.useMutation({
     onSuccess: (data) => {
       localStorage.setItem('local_auth_token', data.token)
-      window.location.href = '/discover'
+      // Store welcome flag for toast on next page
+      sessionStorage.setItem('show_welcome', 'true')
+      if (data.emailVerificationCode) {
+        sessionStorage.setItem('verify_code', data.emailVerificationCode)
+        navigate('/verify-email')
+      } else {
+        window.location.href = '/discover'
+      }
     },
     onError: (err) => setError(err.message),
   })
@@ -49,6 +57,7 @@ export default function Login() {
         username,
         password,
         displayName: displayName || undefined,
+        email: email || undefined,
       })
     }
   }
@@ -62,7 +71,6 @@ export default function Login() {
       exit={{ opacity: 0 }}
       className="h-full flex flex-col px-6 py-8"
     >
-      {/* Back button */}
       <button
         onClick={() => navigate('/')}
         className="w-10 h-10 rounded-full glass-card flex items-center justify-center mb-6 active:scale-95 transition-transform"
@@ -71,7 +79,6 @@ export default function Login() {
       </button>
 
       <div className="flex-1 flex flex-col justify-center">
-        {/* Title */}
         <h1 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'Outfit' }}>
           {mode === 'login' ? 'Welcome Back' : 'Get Started'}
         </h1>
@@ -81,19 +88,34 @@ export default function Login() {
             : 'Create an account to start rating'}
         </p>
 
-        {/* Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'register' && (
-            <div>
-              <label className="text-xs text-[#AFAFAF] mb-1.5 block">Display Name</label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your display name"
-                className="w-full h-12 glass-card rounded-xl px-4 text-white text-sm placeholder:text-[#AFAFAF] focus:outline-none focus:border-[#F04F51]"
-              />
-            </div>
+            <>
+              <div>
+                <label className="text-xs text-[#AFAFAF] mb-1.5 block">Display Name</label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your display name"
+                  className="w-full h-12 glass-card rounded-xl px-4 text-white text-sm placeholder:text-[#AFAFAF] focus:outline-none focus:border-[#F04F51]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#AFAFAF] mb-1.5 block flex items-center gap-1">
+                  <Mail size={12} />
+                  Email <span className="text-[#AFAFAF]/50">(optional, for verification)</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full h-12 glass-card rounded-xl px-4 text-white text-sm placeholder:text-[#AFAFAF] focus:outline-none focus:border-[#F04F51]"
+                />
+              </div>
+            </>
           )}
 
           <div>
@@ -145,7 +167,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Toggle mode */}
         {mode === 'login' && (
           <button
             onClick={() => navigate('/forgot-password')}

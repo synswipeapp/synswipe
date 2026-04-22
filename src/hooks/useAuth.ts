@@ -5,6 +5,7 @@ export interface UnifiedUser {
   id: number;
   name: string;
   email?: string | null;
+  emailVerified?: boolean;
   avatar?: string | null;
   role: string;
   creatorMode?: boolean;
@@ -57,6 +58,7 @@ export function useAuth() {
         id: oauthUser.id,
         name: oauthUser.name ?? "User",
         email: oauthUser.email,
+        emailVerified: true,
         avatar: oauthUser.avatar,
         role: oauthUser.role,
         creatorMode: oauthUser.creatorMode ?? false,
@@ -68,7 +70,8 @@ export function useAuth() {
       return {
         id: localUser.id,
         name: localUser.name ?? localUser.username ?? "User",
-        email: null,
+        email: localUser.email,
+        emailVerified: localUser.emailVerified ?? false,
         avatar: localUser.avatar,
         role: localUser.role,
         creatorMode: localUser.creatorMode ?? false,

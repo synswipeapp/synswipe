@@ -113,6 +113,8 @@ export type Notification = typeof notifications.$inferSelect;
 export const localUsers = mysqlTable("local_users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 100 }).notNull().unique(),
+  email: varchar("email", { length: 320 }).unique(),
+  emailVerified: boolean("email_verified").default(false),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   displayName: varchar("display_name", { length: 255 }),
   bio: varchar("bio", { length: 500 }),
@@ -153,6 +155,17 @@ export const passwordResets = mysqlTable("password_resets", {
 });
 
 export type PasswordReset = typeof passwordResets.$inferSelect;
+
+// ─── Email Verifications ───
+export const emailVerifications = mysqlTable("email_verifications", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  code: varchar("code", { length: 8 }).notNull(),
+  verified: boolean("verified").default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 // ─── User Preferences ───
 export const userPreferences = mysqlTable("user_preferences", {

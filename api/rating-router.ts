@@ -4,6 +4,21 @@ import { getDb } from "./queries/connection";
 import { ratings, avatars, notifications } from "@db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
+// ─── Rate Limiting ───
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) return false;
+  entry.count++;
+  return true;
+}
+
 export const ratingRouter = createRouter({
   submit: authedQuery
     .input(z.object({
@@ -14,6 +29,11 @@ export const ratingRouter = createRouter({
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       const voterId = ctx.user.id;
+
+      // Rate limit: 100 ratings per user per hour
+      if (!checkRateLimit(`rate:${voterId}`, 100, 60 * 60 * 1000)) {
+        throw new Error("Rate limit exceeded. Try again later.");
+      }
 
       // Check if already rated
       const [existing] = await db

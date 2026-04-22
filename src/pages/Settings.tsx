@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router'
-import { ArrowLeft, Lock, HelpCircle } from 'lucide-react'
+import { ArrowLeft, Lock, HelpCircle, Trash2, AlertTriangle } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/components/ToastProvider'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -14,11 +15,26 @@ export default function Settings() {
   const [bio, setBio] = useState(user?.bio ?? '')
   const [handle, setHandle] = useState(user?.handle ?? '')
   const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const { showToast } = useToast()
 
   const updateProfile = trpc.creator.updateProfile.useMutation({
     onSuccess: () => {
       utils.creator.getProfile.invalidate()
       setIsSaving(false)
+    },
+  })
+
+  const deleteAccount = trpc.localAuth.deleteAccount.useMutation({
+    onSuccess: () => {
+      localStorage.removeItem('local_auth_token')
+      showToast('Your account has been deleted', 'success')
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1500)
+    },
+    onError: (err) => {
+      showToast(err.message, 'warning')
     },
   })
 
@@ -119,6 +135,54 @@ export default function Settings() {
               <span className="flex-1 text-white text-sm">Help & Support</span>
             </button>
           </div>
+        </div>
+
+        {/* Delete Account */}
+        <div className="mt-8 mb-8">
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl border border-[#EF4444]/20 text-left active:bg-[#EF4444]/5 transition-colors"
+            >
+              <Trash2 size={18} className="text-[#EF4444]" />
+              <div>
+                <p className="text-sm text-[#EF4444] font-medium">Delete Account</p>
+                <p className="text-xs text-[#AFAFAF]">Permanently remove all your data</p>
+              </div>
+            </button>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl p-5 border border-[#EF4444]/30 bg-[#EF4444]/5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle size={18} className="text-[#EF4444]" />
+                <p className="text-white font-semibold text-sm" style={{ fontFamily: 'Outfit' }}>
+                  Delete Your Account?
+                </p>
+              </div>
+              <p className="text-xs text-[#AFAFAF] mb-4">
+                This will permanently delete your account, all avatars, ratings, reviews, and social links. This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 h-10 glass-card rounded-full text-sm text-white font-medium active:scale-95 transition-transform"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteAccount.mutate()}
+                  disabled={deleteAccount.isPending}
+                  className="flex-1 h-10 bg-[#EF4444] text-white rounded-full text-sm font-bold disabled:opacity-50 active:scale-95 transition-transform"
+                  style={{ fontFamily: 'Outfit' }}
+                >
+                  {deleteAccount.isPending ? 'Deleting...' : 'Delete Forever'}
+                </button>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
     </motion.div>
