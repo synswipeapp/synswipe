@@ -92,7 +92,7 @@ export default function Analytics() {
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-[10px] text-orange-400">{stats.totalFire} 🔥</span>
-                  <span className="text-[10px] text-cyan-400">{stats.totalIce} ❄️</span>
+                  <span className="text-[10px] text-cyan-400 flex items-center gap-0.5">{stats.totalIce} <Snowflake size={10} /></span>
                 </div>
               </div>
             )}
