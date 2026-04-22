@@ -2,14 +2,15 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router'
 import {
   Camera, ToggleLeft, ToggleRight, Flame, Eye, Star, MousePointer,
-  Plus, Trash2, LogOut, ChevronRight, Crown
+  Plus, Trash2, LogOut, ChevronRight, Crown, BarChart3, Share2, Shield
 } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
+import { useShare } from '@/hooks/useShare'
 
 export default function Profile() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
   const utils = trpc.useUtils()
 
   const { data: stats } = trpc.creator.getStats.useQuery(undefined, {
@@ -62,10 +63,15 @@ export default function Profile() {
     )
   }
 
+  const { shareProfile } = useShare()
+
   const menuItems = [
     { label: 'Edit Profile', icon: Camera, action: () => navigate('/settings') },
     { label: 'Notifications', icon: Eye, action: () => navigate('/notifications') },
-    { label: 'Help & Support', icon: ChevronRight, action: () => {} },
+    { label: 'Analytics', icon: BarChart3, action: () => navigate('/analytics') },
+    { label: 'Share Profile', icon: Share2, action: () => { if (user?.handle) shareProfile(user.handle, user.name) } },
+    { label: 'Help & Support', icon: ChevronRight, action: () => navigate('/support') },
+    ...(isAdmin ? [{ label: 'Admin Dashboard', icon: Shield, action: () => navigate('/admin') }] : []),
   ]
 
   return (

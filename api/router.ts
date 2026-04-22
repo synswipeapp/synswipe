@@ -13,6 +13,8 @@ import { preferencesRouter } from "./preferences-router";
 import { stripeRouter } from "./stripe-router";
 import { uploadRouter } from "./upload-router";
 import { reportRouter } from "./report-router";
+import { analyticsRouter } from "./analytics-router";
+import { adminRouter } from "./admin-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -32,6 +34,8 @@ export const appRouter = createRouter({
   stripe: stripeRouter,
   upload: uploadRouter,
   report: reportRouter,
+  analytics: analyticsRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

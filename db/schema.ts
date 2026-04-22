@@ -190,3 +190,15 @@ export const reports = mysqlTable("reports", {
 });
 
 export type Report = typeof reports.$inferSelect;
+
+// ─── Analytics ───
+export const avatarViews = mysqlTable("avatar_views", {
+  id: serial("id").primaryKey(),
+  avatarId: bigint("avatar_id", { mode: "number", unsigned: true }).notNull(),
+  viewerId: bigint("viewer_id", { mode: "number", unsigned: true }),
+  source: varchar("source", { length: 50 }), // 'discover', 'profile', 'share'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_views_avatar").on(table.avatarId),
+  index("idx_views_created").on(table.createdAt),
+]);

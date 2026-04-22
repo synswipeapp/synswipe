@@ -16,6 +16,8 @@ import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import VerifyEmail from './pages/VerifyEmail'
+import Admin from './pages/Admin'
+import Analytics from './pages/Analytics'
 import BottomNav from './components/BottomNav'
 import { ToastProvider } from './components/ToastProvider'
 import { useAuth } from './hooks/useAuth'
@@ -32,7 +34,9 @@ export default function App() {
     location.pathname !== '/terms' &&
     location.pathname !== '/privacy' &&
     location.pathname !== '/support' &&
-    location.pathname !== '/notifications'
+    location.pathname !== '/notifications' &&
+    location.pathname !== '/admin' &&
+    location.pathname !== '/analytics'
 
   return (
     <ToastProvider>
@@ -56,6 +60,8 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/analytics" element={<Analytics />} />
             </Routes>
           </AnimatePresence>
           {showNav && <BottomNav />}
