@@ -40,9 +40,7 @@ function SwipePreviewCard() {
     >
       <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/10">
         <img src="/preview-card.jpg" alt="" className="w-full aspect-[3/4] object-cover" />
-        <div className="absolute top-2 right-2 bg-orange-500 p-1.5 rounded-lg rotate-[-12deg] shadow-lg">
-          <span className="text-white text-sm">🔥</span>
-        </div>
+        <span className="absolute top-2 right-2 text-2xl rotate-[-12deg]">🔥</span>
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
       </div>
     </motion.div>
