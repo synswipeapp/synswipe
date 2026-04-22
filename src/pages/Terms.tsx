@@ -27,23 +27,27 @@ export default function Terms() {
       text: 'You may only upload AI-generated avatars. All content must be appropriate for a general audience. Prohibited content includes: explicit sexual content, graphic violence, hate speech, harassment, and content that infringes on intellectual property rights.',
     },
     {
-      title: '6. Reporting',
+      title: '6. Photorealistic Avatar Restrictions',
+      text: 'Explicit nude photorealistic images are strictly prohibited and will be removed immediately. Photorealistic images depicting or appearing to depict minors or individuals under 18 years of age are strictly forbidden. Any account found uploading such content will be permanently banned.',
+    },
+    {
+      title: '7. Reporting',
       text: 'Users may report inappropriate avatars. We reserve the right to remove any content that violates these terms without notice.',
     },
     {
-      title: '7. Termination',
+      title: '8. Termination',
       text: 'We may suspend or terminate your account at any time for violations of these terms. You may also delete your account at any time through your settings.',
     },
     {
-      title: '8. Limitation of Liability',
+      title: '9. Limitation of Liability',
       text: 'SynSwipe is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the service.',
     },
     {
-      title: '9. Changes to Terms',
+      title: '10. Changes to Terms',
       text: 'We may update these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms.',
     },
     {
-      title: '10. Contact',
+      title: '11. Contact',
       text: 'For questions about these terms, contact us through the Support page.',
     },
   ]
