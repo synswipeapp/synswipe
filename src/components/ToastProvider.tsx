@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Flame, Snowflake, X, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Flame, X, CheckCircle, AlertTriangle } from 'lucide-react'
 
 type ToastType = 'fire' | 'ice' | 'success' | 'warning' | 'info'
 
@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const iconMap: Record<ToastType, React.ReactNode> = {
     fire: <Flame size={18} className="text-orange-400" />,
-    ice: <Snowflake size={18} className="text-cyan-400" />,
+    ice: <span className="text-cyan-400 text-lg">🧊</span>,
     success: <CheckCircle size={18} className="text-[#4ADE80]" />,
     warning: <AlertTriangle size={18} className="text-yellow-400" />,
     info: <span className="text-[#60A5FA] text-lg">ℹ</span>,

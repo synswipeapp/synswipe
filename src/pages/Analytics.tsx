@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router'
 import {
-  ArrowLeft, Eye, Flame, Snowflake, Star,
+  ArrowLeft, Eye, Flame, Star,
   TrendingUp, BarChart3
 } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
@@ -60,7 +60,7 @@ export default function Analytics() {
                 <p className="text-xs text-[#AFAFAF]">Fire Votes</p>
               </div>
               <div className="glass-card rounded-2xl p-4">
-                <Snowflake size={18} className="text-cyan-400 mb-2" />
+                <span className="text-2xl mb-2">🧊</span>
                 <p className="text-2xl font-bold text-white" style={{ fontFamily: 'Outfit' }}>{stats.totalIce}</p>
                 <p className="text-xs text-[#AFAFAF]">Ice Votes</p>
               </div>
@@ -92,7 +92,7 @@ export default function Analytics() {
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-[10px] text-orange-400">{stats.totalFire} 🔥</span>
-                  <span className="text-[10px] text-cyan-400 flex items-center gap-0.5">{stats.totalIce} <Snowflake size={10} /></span>
+                  <span className="text-[10px] text-cyan-400 flex items-center gap-0.5">{stats.totalIce} 🧊</span>
                 </div>
               </div>
             )}

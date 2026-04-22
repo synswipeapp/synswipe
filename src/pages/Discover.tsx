@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import type { PanInfo } from 'framer-motion'
 import { useNavigate } from 'react-router'
-import { Bell, Flame, Snowflake, MessageCircle, Star, Flag } from 'lucide-react'
+import { Bell, Flame, MessageCircle, Star, Flag } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/components/ToastProvider'
@@ -130,7 +130,7 @@ function AvatarCard({
           style={{ opacity: iceOpacity, scale: iceScale }}
         >
           <span className="text-white font-bold text-2xl flex items-center gap-1" style={{ fontFamily: 'Outfit' }}>
-            <Snowflake size={24} />
+            <span className="text-2xl">🧊</span>
             ICE
           </span>
         </motion.div>
@@ -240,7 +240,7 @@ function RatingSheet({
                 {verdict === 'fire' ? (
                   <Flame size={32} className="text-orange-400" />
                 ) : (
-                  <Snowflake size={32} className="text-cyan-400" />
+                  <span className="text-3xl">🧊</span>
                 )}
               </motion.div>
               <h3 className="text-xl font-bold text-white mb-1" style={{ fontFamily: 'Outfit' }}>
@@ -510,7 +510,7 @@ export default function Discover() {
             className="flex-1 bg-cyan-500 flex items-center justify-center gap-2 text-white font-bold active:scale-95 transition-transform"
             style={{ fontFamily: 'Outfit' }}
           >
-            <Snowflake size={20} />
+            <span className="text-lg">🧊</span>
             ICE
           </button>
           <button
