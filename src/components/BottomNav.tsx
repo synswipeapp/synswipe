@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router'
-import { Compass, Trophy, User, Settings } from 'lucide-react'
+import { Compass, Trophy, User, HelpCircle } from 'lucide-react'
 
 const tabs = [
   { path: '/discover', label: 'Discover', icon: Compass },
   { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { path: '/profile', label: 'Profile', icon: User },
-  { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/support', label: 'Support', icon: HelpCircle },
 ]
 
 export default function BottomNav() {

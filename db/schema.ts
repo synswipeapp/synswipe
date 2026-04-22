@@ -164,3 +164,16 @@ export const userPreferences = mysqlTable("user_preferences", {
 });
 
 export type UserPreference = typeof userPreferences.$inferSelect;
+
+// ─── Reports ───
+export const reports = mysqlTable("reports", {
+  id: serial("id").primaryKey(),
+  avatarId: bigint("avatar_id", { mode: "number", unsigned: true }).notNull(),
+  reporterId: bigint("reporter_id", { mode: "number", unsigned: true }),
+  reason: varchar("reason", { length: 255 }).notNull(),
+  details: varchar("details", { length: 1000 }),
+  status: mysqlEnum("status", ["pending", "reviewed", "resolved", "dismissed"]).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Report = typeof reports.$inferSelect;

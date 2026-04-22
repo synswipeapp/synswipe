@@ -8,6 +8,9 @@ import CreatorDetail from './pages/CreatorDetail'
 import UploadAvatar from './pages/UploadAvatar'
 import CreatorUpgrade from './pages/CreatorUpgrade'
 import Settings from './pages/Settings'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
+import Support from './pages/Support'
 import Notifications from './pages/Notifications'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
@@ -24,6 +27,9 @@ export default function App() {
     location.pathname !== '/upload' && 
     location.pathname !== '/login' &&
     location.pathname !== '/settings' &&
+    location.pathname !== '/terms' &&
+    location.pathname !== '/privacy' &&
+    location.pathname !== '/support' &&
     location.pathname !== '/notifications'
 
   return (
@@ -39,6 +45,9 @@ export default function App() {
             <Route path="/upload" element={<UploadAvatar />} />
           <Route path="/upgrade" element={<CreatorUpgrade />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

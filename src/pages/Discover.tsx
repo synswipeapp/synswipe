@@ -2,9 +2,10 @@ import { useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import type { PanInfo } from 'framer-motion'
 import { useNavigate } from 'react-router'
-import { Bell, Flame, Snowflake, MessageCircle, Star } from 'lucide-react'
+import { Bell, Flame, Snowflake, MessageCircle, Star, Flag } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
+import ReportModal from '@/components/ReportModal'
 
 const SWIPE_THRESHOLD = 120
 
@@ -30,10 +31,12 @@ function AvatarCard({
   card,
   index,
   onSwipe,
+  onReport,
 }: {
   card: CardData
   index: number
   onSwipe: (direction: 'left' | 'right') => void
+  onReport?: () => void
 }) {
   const navigate = useNavigate()
   const x = useMotionValue(0)
@@ -131,8 +134,8 @@ function AvatarCard({
           </span>
         </motion.div>
 
-        {/* Creator avatar */}
-        <div className="absolute top-4 right-4">
+        {/* Creator avatar + Report */}
+        <div className="absolute top-4 right-4 flex flex-col items-center gap-2">
           {card.creatorAvatar && (
             <img
               src={card.creatorAvatar}
@@ -141,6 +144,19 @@ function AvatarCard({
             />
           )}
         </div>
+
+        {/* Report button */}
+        {onReport && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onReport()
+            }}
+            className="absolute top-16 right-4 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center"
+          >
+            <Flag size={14} className="text-white/70" />
+          </button>
+        )}
 
         {/* Bottom content */}
         <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -319,6 +335,8 @@ export default function Discover() {
   const [pendingVerdict, setPendingVerdict] = useState<Verdict>(null)
   const [pendingAvatarId, setPendingAvatarId] = useState<number | null>(null)
   const [showRatingSheet, setShowRatingSheet] = useState(false)
+  const [reportAvatarId, setReportAvatarId] = useState<number | null>(null)
+  const [showReportModal, setShowReportModal] = useState(false)
   const utils = trpc.useUtils()
 
   const handleStyleChange = (s: StyleFilter) => {
@@ -450,6 +468,10 @@ export default function Discover() {
                 card={card}
                 index={i}
                 onSwipe={i === 0 ? handleSwipe : () => {}}
+                onReport={i === 0 ? () => {
+                  setReportAvatarId(card.id)
+                  setShowReportModal(true)
+                } : undefined}
               />
             ))}
           </AnimatePresence>
@@ -501,6 +523,13 @@ export default function Discover() {
         onClose={handleSkipRating}
         onSubmit={handleRatingSubmit}
         verdict={pendingVerdict}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        avatarId={reportAvatarId ?? 0}
       />
     </div>
   )
