@@ -4,6 +4,7 @@ import { getDb } from "./queries/connection";
 import { localUsers, passwordResets, emailVerifications, avatars, ratings, reviews, socialLinks, subscriptions, notifications } from "@db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { SignJWT, jwtVerify } from "jose";
+import { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } from "./email-service";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "avatarrate-local-secret-key-2024");
 
@@ -108,25 +109,31 @@ export const localAuthRouter = createRouter({
       const userId = Number(result[0].insertId);
 
       // Send email verification if email provided
+      let verificationCode: string | undefined;
       if (input.email) {
-        const code = generateCode(6);
+        verificationCode = generateCode(6);
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 24);
 
         await db.insert(emailVerifications).values({
           userId,
           email: input.email,
-          code,
+          code: verificationCode,
           expiresAt,
         });
 
-        // In production, send actual email here
-        console.log(`[VERIFY EMAIL] User ${input.username}: code ${code}`);
+        // Send verification email via SendGrid
+        await sendVerificationEmail(input.email, input.username, verificationCode);
+      }
+
+      // Send welcome email
+      if (input.email) {
+        await sendWelcomeEmail(input.email, input.displayName ?? input.username);
       }
 
       const token = await createToken(userId);
 
-      return { token, userId, emailVerificationCode: input.email ? generateCode(6) : undefined };
+      return { token, userId, emailVerificationCode: verificationCode };
     }),
 
   login: publicQuery
@@ -269,9 +276,10 @@ export const localAuthRouter = createRouter({
 
       await db.insert(emailVerifications).values({ userId, email: user.email, code, expiresAt });
 
-      console.log(`[RESEND VERIFY] User ${user.username}: code ${code}`);
+      // Send verification email via SendGrid
+      await sendVerificationEmail(user.email, user.username, code);
 
-      return { success: true, code };
+      return { success: true };
     }),
 
   // ─── Password Reset ───
@@ -294,7 +302,12 @@ export const localAuthRouter = createRouter({
 
       await db.insert(passwordResets).values({ userId: user.id, token, expiresAt });
 
-      return { token, message: "Use this reset code to set a new password" };
+      // Send password reset email via SendGrid
+      if (user.email) {
+        await sendPasswordResetEmail(user.email, user.username, token);
+      }
+
+      return { token, message: "Check your email for the reset code" };
     }),
 
   resetPassword: publicQuery

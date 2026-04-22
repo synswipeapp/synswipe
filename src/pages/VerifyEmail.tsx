@@ -75,7 +75,7 @@ export default function VerifyEmail() {
               Verify Your Email
             </h1>
             <p className="text-sm text-[#AFAFAF] mb-6">
-              Enter the 6-character verification code. Check your email or look at the console output.
+              Enter the 6-character verification code sent to your email.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">

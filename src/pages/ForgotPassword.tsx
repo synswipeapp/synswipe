@@ -53,7 +53,7 @@ export default function ForgotPassword() {
               Reset Password
             </h1>
             <p className="text-sm text-[#AFAFAF] mb-6">
-              Enter your username and we'll generate a reset code for you.
+              Enter your username and we'll send a reset code to your email.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -86,14 +86,14 @@ export default function ForgotPassword() {
               <Check size={28} className="text-[#4ADE80]" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Outfit' }}>
-              Here's Your Code
+              Check Your Email
             </h1>
             <p className="text-sm text-[#AFAFAF] mb-6">
-              Copy this code and use it on the reset page. It expires in 1 hour.
+              A password reset code has been sent to your email. It expires in 1 hour.
             </p>
 
             <div className="glass-card rounded-xl p-5 mb-6 text-center">
-              <p className="text-xs text-[#AFAFAF] mb-2">Reset Code</p>
+              <p className="text-xs text-[#AFAFAF] mb-2">Your Reset Code</p>
               <p className="text-3xl font-bold text-white tracking-widest" style={{ fontFamily: 'Outfit' }}>
                 {token}
               </p>
