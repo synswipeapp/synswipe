@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router'
-import { Zap, Users, Link2, ChevronRight, Flame } from 'lucide-react'
+import { Zap, Users, Link2, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 const features = [
@@ -41,7 +41,7 @@ function SwipePreviewCard() {
       <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/10">
         <img src="/preview-card.jpg" alt="" className="w-full aspect-[3/4] object-cover" />
         <div className="absolute top-2 right-2 bg-orange-500 p-1.5 rounded-lg rotate-[-12deg] shadow-lg">
-          <Flame size={14} className="text-white" />
+          <span className="text-white text-sm">🔥</span>
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
       </div>
