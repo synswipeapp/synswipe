@@ -2,7 +2,7 @@ import sgMail from "@sendgrid/mail";
 
 const apiKey = process.env.SENDGRID_API_KEY;
 const fromEmail = process.env.FROM_EMAIL || "noreply@synswipe.app";
-const appUrl = process.env.APP_URL || "https://syn-swipe.web.app";
+const appUrl = process.env.APP_URL || "https://synswipe.app";
 
 let isConfigured = false;
 if (apiKey && apiKey.startsWith("SG.")) {
