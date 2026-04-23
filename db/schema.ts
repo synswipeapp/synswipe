@@ -59,7 +59,6 @@ export const ratings = mysqlTable("ratings", {
   ratingValue: int("rating_value"), // 1-10 scale
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
-  uniqueIndex("idx_ratings_unique").on(table.avatarId, table.voterId),
   index("idx_ratings_avatar_verdict").on(table.avatarId, table.verdict),
 ]);
 
