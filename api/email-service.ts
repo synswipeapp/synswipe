@@ -1,19 +1,15 @@
-import sgMail from "@sendgrid/mail";
+import { Resend } from "resend";
 
-const apiKey = process.env.SENDGRID_API_KEY;
+const apiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.FROM_EMAIL || "noreply@synswipe.app";
 const appUrl = process.env.APP_URL || "https://synswipe.app";
 
-let isConfigured = false;
-if (apiKey && apiKey.startsWith("SG.")) {
-  sgMail.setApiKey(apiKey);
-  isConfigured = true;
-}
+const resend = apiKey && apiKey.startsWith("re_") ? new Resend(apiKey) : null;
 
 function logEmail(subject: string, to: string, body: string) {
-  console.log(`\n[EMAIL] ${subject}`);
+  console.log(`\n[EMAIL - ${resend ? "LIVE" : "CONSOLE ONLY"}] ${subject}`);
   console.log(`  To: ${to}`);
-  console.log(`  Body preview: ${body.substring(0, 120)}...\n`);
+  console.log(`  Body: ${body.substring(0, 150)}...\n`);
 }
 
 // ─── Welcome Email ───
@@ -38,8 +34,14 @@ export async function sendWelcomeEmail(to: string, username: string) {
 
   const text = `Welcome to SynSwipe, ${username}! Your account is ready. Start exploring at ${appUrl}/discover`;
 
-  if (isConfigured) {
-    await sgMail.send({ to, from: { email: fromEmail, name: "SynSwipe" }, subject: "Welcome to SynSwipe!", html, text });
+  if (resend) {
+    await resend.emails.send({
+      from: `SynSwipe <${fromEmail}>`,
+      to,
+      subject: "Welcome to SynSwipe!",
+      html,
+      text,
+    });
   }
   logEmail("Welcome Email", to, text);
 }
@@ -64,8 +66,14 @@ export async function sendVerificationEmail(to: string, username: string, code: 
 
   const text = `Hey ${username}, your SynSwipe verification code is: ${code}. This code expires in 24 hours.`;
 
-  if (isConfigured) {
-    await sgMail.send({ to, from: { email: fromEmail, name: "SynSwipe" }, subject: "Your SynSwipe Verification Code", html, text });
+  if (resend) {
+    await resend.emails.send({
+      from: `SynSwipe <${fromEmail}>`,
+      to,
+      subject: "Your SynSwipe Verification Code",
+      html,
+      text,
+    });
   }
   logEmail("Verification Code", to, text);
 }
@@ -90,12 +98,18 @@ export async function sendPasswordResetEmail(to: string, username: string, token
 
   const text = `Hey ${username}, your SynSwipe password reset code is: ${token}. This code expires in 1 hour. If you didn't request this, ignore this email.`;
 
-  if (isConfigured) {
-    await sgMail.send({ to, from: { email: fromEmail, name: "SynSwipe" }, subject: "SynSwipe Password Reset", html, text });
+  if (resend) {
+    await resend.emails.send({
+      from: `SynSwipe <${fromEmail}>`,
+      to,
+      subject: "SynSwipe Password Reset",
+      html,
+      text,
+    });
   }
   logEmail("Password Reset", to, text);
 }
 
 export function emailConfigured(): boolean {
-  return isConfigured;
+  return resend !== null;
 }
