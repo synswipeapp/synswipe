@@ -504,22 +504,20 @@ export default function Discover() {
 
       {/* Fire/Ice Buttons */}
       <div className="shrink-0 px-6 pb-4">
-        <div className="flex gap-0 rounded-2xl overflow-hidden h-14">
+        <div className="flex items-center justify-center gap-16 h-14">
           <button
             onClick={() => handleButtonPress('left')}
-            className="flex-1 bg-cyan-500 flex items-center justify-center gap-2 text-white font-bold active:scale-95 transition-transform"
-            style={{ fontFamily: 'Outfit' }}
+            className="text-5xl active:scale-90 transition-transform"
+            aria-label="Ice"
           >
-            <span className="text-lg">🧊</span>
-            ICE
+            🧊
           </button>
           <button
             onClick={() => handleButtonPress('right')}
-            className="flex-1 bg-orange-500 flex items-center justify-center gap-2 text-white font-bold active:scale-95 transition-transform"
-            style={{ fontFamily: 'Outfit' }}
+            className="text-5xl active:scale-90 transition-transform"
+            aria-label="Fire"
           >
-            <Flame size={20} />
-            FIRE
+            🔥
           </button>
         </div>
         <p className="text-center text-[10px] text-[#AFAFAF] mt-2">
