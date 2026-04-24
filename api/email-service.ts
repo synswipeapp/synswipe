@@ -1,15 +1,57 @@
-import { Resend } from "resend";
-
 const apiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.FROM_EMAIL || "noreply@synswipe.app";
 const appUrl = process.env.APP_URL || "https://synswipe.app";
 
-const resend = apiKey && apiKey.startsWith("re_") ? new Resend(apiKey) : null;
+const isConfigured = !!(apiKey && apiKey.startsWith("re_"));
 
-function logEmail(subject: string, to: string, body: string) {
-  console.log(`\n[EMAIL - ${resend ? "LIVE" : "CONSOLE ONLY"}] ${subject}`);
+function logEmail(subject: string, to: string, body: string, status: string) {
+  console.log(`\n[EMAIL ${status}] ${subject}`);
   console.log(`  To: ${to}`);
-  console.log(`  Body: ${body.substring(0, 150)}...\n`);
+  console.log(`  From: ${fromEmail}`);
+  console.log(`  Key present: ${isConfigured}`);
+  console.log(`  Body: ${body.substring(0, 120)}...\n`);
+}
+
+async function sendEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}) {
+  if (!isConfigured) {
+    logEmail(params.subject, params.to, params.text, "SKIPPED - no API key");
+    return { success: false, error: "No API key" };
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: `SynSwipe <${fromEmail}>`,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+        text: params.text,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error(`[RESEND ERROR] ${response.status}:`, JSON.stringify(data));
+      return { success: false, error: data?.message || `HTTP ${response.status}` };
+    }
+
+    logEmail(params.subject, params.to, params.text, "SENT");
+    return { success: true, id: data.id };
+  } catch (err: any) {
+    console.error(`[EMAIL ERROR] ${params.subject}:`, err.message);
+    return { success: false, error: err.message };
+  }
 }
 
 // ─── Welcome Email ───
@@ -34,16 +76,7 @@ export async function sendWelcomeEmail(to: string, username: string) {
 
   const text = `Welcome to SynSwipe, ${username}! Your account is ready. Start exploring at ${appUrl}/discover`;
 
-  if (resend) {
-    await resend.emails.send({
-      from: `SynSwipe <${fromEmail}>`,
-      to,
-      subject: "Welcome to SynSwipe!",
-      html,
-      text,
-    });
-  }
-  logEmail("Welcome Email", to, text);
+  return sendEmail({ to, subject: "Welcome to SynSwipe!", html, text });
 }
 
 // ─── Email Verification ───
@@ -66,16 +99,7 @@ export async function sendVerificationEmail(to: string, username: string, code: 
 
   const text = `Hey ${username}, your SynSwipe verification code is: ${code}. This code expires in 24 hours.`;
 
-  if (resend) {
-    await resend.emails.send({
-      from: `SynSwipe <${fromEmail}>`,
-      to,
-      subject: "Your SynSwipe Verification Code",
-      html,
-      text,
-    });
-  }
-  logEmail("Verification Code", to, text);
+  return sendEmail({ to, subject: "Your SynSwipe Verification Code", html, text });
 }
 
 // ─── Password Reset ───
@@ -98,18 +122,9 @@ export async function sendPasswordResetEmail(to: string, username: string, token
 
   const text = `Hey ${username}, your SynSwipe password reset code is: ${token}. This code expires in 1 hour. If you didn't request this, ignore this email.`;
 
-  if (resend) {
-    await resend.emails.send({
-      from: `SynSwipe <${fromEmail}>`,
-      to,
-      subject: "SynSwipe Password Reset",
-      html,
-      text,
-    });
-  }
-  logEmail("Password Reset", to, text);
+  return sendEmail({ to, subject: "SynSwipe Password Reset", html, text });
 }
 
 export function emailConfigured(): boolean {
-  return resend !== null;
+  return isConfigured;
 }
