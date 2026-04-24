@@ -1,5 +1,4 @@
 import { Routes, Route, useLocation } from 'react-router'
-import { AnimatePresence } from 'framer-motion'
 import Welcome from './pages/Welcome'
 import Discover from './pages/Discover'
 import Leaderboard from './pages/Leaderboard'
@@ -42,28 +41,26 @@ export default function App() {
     <ToastProvider>
       <div className="h-screen w-full bg-[#1E1E1E] flex justify-center">
         <div className="w-full max-w-md h-full relative flex flex-col overflow-hidden">
-          <AnimatePresence mode="wait">
-            <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<Welcome />} />
-              <Route path="/discover" element={<Discover />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/creator/:handle" element={<CreatorDetail />} />
-              <Route path="/upload" element={<UploadAvatar />} />
-              <Route path="/upgrade" element={<CreatorUpgrade />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/analytics" element={<Analytics />} />
-            </Routes>
-          </AnimatePresence>
+          <Routes>
+            <Route path="/" element={<Welcome />} />
+            <Route path="/discover" element={<Discover />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/creator/:handle" element={<CreatorDetail />} />
+            <Route path="/upload" element={<UploadAvatar />} />
+            <Route path="/upgrade" element={<CreatorUpgrade />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/analytics" element={<Analytics />} />
+          </Routes>
           {showNav && <BottomNav />}
         </div>
       </div>
