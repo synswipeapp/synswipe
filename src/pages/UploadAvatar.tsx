@@ -39,6 +39,7 @@ export default function UploadAvatar() {
 
   const uploadMutation = trpc.avatar.upload.useMutation({
     onSuccess: () => {
+      utils.avatar.discover.invalidate()
       navigate('/profile')
     },
   })

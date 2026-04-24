@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createRouter, publicQuery, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { avatars, users, ratings, reviews, socialLinks } from "@db/schema";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { avatars, users, localUsers, ratings, reviews, socialLinks } from "@db/schema";
+import { eq, and, desc, sql, inArray, isNull, or } from "drizzle-orm";
 
 export const avatarRouter = createRouter({
   discover: publicQuery
@@ -17,10 +17,10 @@ export const avatarRouter = createRouter({
       const offset = input?.offset ?? 0;
       const style = input?.style ?? "all";
 
-      const baseFilter = style !== "all"
-        ? and(eq(avatars.isPublic, true), eq(users.creatorMode, true), eq(avatars.avatarStyle, style))
-        : and(eq(avatars.isPublic, true), eq(users.creatorMode, true));
+      // Build style filter
+      const styleFilter = style !== "all" ? eq(avatars.avatarStyle, style) : undefined;
 
+      // Get avatars that are public and have a creator (either OAuth or local)
       const results = await db
         .select({
           id: avatars.id,
@@ -31,14 +31,18 @@ export const avatarRouter = createRouter({
           avatarStyle: avatars.avatarStyle,
           createdAt: avatars.createdAt,
           creatorId: avatars.creatorId,
-          creatorName: users.name,
-          creatorHandle: users.handle,
-          creatorAvatar: users.avatar,
-          creatorBio: users.bio,
+          creatorName: sql<string>`COALESCE(${users.name}, ${localUsers.displayName}, ${localUsers.username}, 'Unknown')`,
+          creatorHandle: sql<string>`COALESCE(${users.handle}, ${localUsers.handle}, '')`,
+          creatorAvatar: sql<string | null>`COALESCE(${users.avatar}, ${localUsers.avatar})`,
+          creatorBio: sql<string | null>`COALESCE(${users.bio}, ${localUsers.bio})`,
         })
         .from(avatars)
-        .innerJoin(users, eq(avatars.creatorId, users.id))
-        .where(baseFilter)
+        .leftJoin(users, eq(avatars.creatorId, users.id))
+        .leftJoin(localUsers, eq(avatars.creatorId, localUsers.id))
+        .where(and(
+          eq(avatars.isPublic, true),
+          styleFilter,
+        ))
         .orderBy(desc(avatars.createdAt))
         .limit(limit)
         .offset(offset);
@@ -150,6 +154,12 @@ export const avatarRouter = createRouter({
         isPrimary: (existingCount[0]?.count ?? 0) === 0,
         avatarStyle: input.avatarStyle,
       });
+
+      // Auto-enable creator mode on first upload (try both tables)
+      if ((existingCount[0]?.count ?? 0) === 0) {
+        await db.update(users).set({ creatorMode: true }).where(eq(users.id, userId));
+        await db.update(localUsers).set({ creatorMode: true }).where(eq(localUsers.id, userId));
+      }
 
       return { id: Number(result[0].insertId), imageUrl: input.imageUrl };
     }),
