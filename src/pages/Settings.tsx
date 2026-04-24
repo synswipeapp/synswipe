@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router'
-import { ArrowLeft, Lock, HelpCircle, Trash2, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Lock, HelpCircle, Trash2, AlertTriangle, Shield } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/components/ToastProvider'
@@ -22,6 +22,16 @@ export default function Settings() {
     onSuccess: () => {
       utils.creator.getProfile.invalidate()
       setIsSaving(false)
+    },
+  })
+
+  const makeAdmin = trpc.localAuth.makeAdmin.useMutation({
+    onSuccess: (data) => {
+      showToast(data.message, 'success')
+      setTimeout(() => window.location.reload(), 1000)
+    },
+    onError: (err) => {
+      showToast(err.message, 'warning')
     },
   })
 
@@ -133,6 +143,16 @@ export default function Settings() {
             <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left">
               <HelpCircle size={18} className="text-[#AFAFAF]" />
               <span className="flex-1 text-white text-sm">Help & Support</span>
+            </button>
+            <button
+              onClick={() => makeAdmin.mutate()}
+              disabled={makeAdmin.isPending}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-white/5"
+            >
+              <Shield size={18} className="text-[#F04F51]" />
+              <span className="flex-1 text-white text-sm">
+                {makeAdmin.isPending ? 'Upgrading...' : 'Make Me Admin (Testing)'}
+              </span>
             </button>
           </div>
         </div>

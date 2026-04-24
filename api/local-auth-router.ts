@@ -199,6 +199,19 @@ export const localAuthRouter = createRouter({
     };
   }),
 
+  makeAdmin: publicQuery.mutation(async ({ ctx }) => {
+    const authHeader = ctx.req.headers.get("x-local-auth-token");
+    if (!authHeader) throw new Error("Not authenticated");
+
+    const userId = await verifyLocalToken(authHeader);
+    if (!userId) throw new Error("Invalid token");
+
+    const db = getDb();
+    await db.update(localUsers).set({ role: "admin" }).where(eq(localUsers.id, userId));
+
+    return { success: true, message: "You are now an admin. Navigate to /admin to access the dashboard." };
+  }),
+
   updateProfile: publicQuery
     .input(z.object({
       name: z.string().max(255).optional(),
