@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import type { PanInfo } from 'framer-motion'
 import { useNavigate } from 'react-router'
-import { Bell, Flame, MessageCircle, Star, Flag } from 'lucide-react'
+import { Bell, MessageCircle, Star, Flag } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/components/ToastProvider'
@@ -117,22 +117,16 @@ function AvatarCard({
 
         {/* Verdict badges */}
         <motion.div
-          className="absolute top-12 right-6 bg-orange-500 px-4 py-2 rounded-xl rotate-[-15deg] shadow-lg border-2 border-orange-400"
+          className="absolute top-12 right-6 bg-orange-500/90 px-4 py-2 rounded-xl rotate-[-15deg] shadow-lg border-2 border-orange-400"
           style={{ opacity: fireOpacity, scale: fireScale }}
         >
-          <span className="text-white font-bold text-2xl flex items-center gap-1" style={{ fontFamily: 'Outfit' }}>
-            <Flame size={24} />
-            FIRE
-          </span>
+          <span className="text-4xl">🔥</span>
         </motion.div>
         <motion.div
-          className="absolute top-12 left-6 bg-cyan-500 px-4 py-2 rounded-xl rotate-[15deg] shadow-lg border-2 border-cyan-400"
+          className="absolute top-12 left-6 bg-cyan-500/90 px-4 py-2 rounded-xl rotate-[15deg] shadow-lg border-2 border-cyan-400"
           style={{ opacity: iceOpacity, scale: iceScale }}
         >
-          <span className="text-white font-bold text-2xl flex items-center gap-1" style={{ fontFamily: 'Outfit' }}>
-            <span className="text-2xl">🧊</span>
-            ICE
-          </span>
+          <span className="text-4xl">🧊</span>
         </motion.div>
 
         {/* Creator avatar + Report */}
@@ -237,11 +231,7 @@ function RatingSheet({
                   border: `2px solid ${verdict === 'fire' ? 'rgba(249, 115, 22, 0.5)' : 'rgba(6, 182, 212, 0.5)'}`,
                 }}
               >
-                {verdict === 'fire' ? (
-                  <Flame size={32} className="text-orange-400" />
-                ) : (
-                  <span className="text-3xl">🧊</span>
-                )}
+                <span className="text-3xl">{verdict === 'fire' ? '🔥' : '🧊'}</span>
               </motion.div>
               <h3 className="text-xl font-bold text-white mb-1" style={{ fontFamily: 'Outfit' }}>
                 {verdict === 'fire' ? 'That\'s Fire!' : 'Ice Cold'}
