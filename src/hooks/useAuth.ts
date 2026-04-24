@@ -16,7 +16,6 @@ export interface UnifiedUser {
 export function useAuth() {
   const utils = trpc.useUtils();
 
-  // Try OAuth first
   const {
     data: oauthUser,
     isLoading: oauthLoading,
@@ -25,7 +24,6 @@ export function useAuth() {
     retry: false,
   });
 
-  // Fall back to local auth
   const {
     data: localUser,
     isLoading: localLoading,
@@ -42,11 +40,8 @@ export function useAuth() {
   });
 
   const logout = useCallback(() => {
-    // Always clear local auth token
     localStorage.removeItem("local_auth_token");
-    // Always call OAuth logout
     logoutMutation.mutate();
-    // Refresh the page to clear all state
     setTimeout(() => {
       window.location.reload();
     }, 100);
