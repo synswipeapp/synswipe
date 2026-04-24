@@ -503,8 +503,8 @@ export default function Discover() {
       </div>
 
       {/* Fire/Ice Buttons */}
-      <div className="shrink-0 px-6 pb-4">
-        <div className="flex items-center justify-center gap-20 h-16">
+      <div className="shrink-0 px-6 pb-2 pt-1">
+        <div className="flex items-center justify-center gap-28 h-16">
           <button
             onClick={() => handleButtonPress('left')}
             className="text-6xl active:scale-90 transition-transform"
