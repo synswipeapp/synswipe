@@ -125,7 +125,7 @@ export const avatarRouter = createRouter({
       caption: z.string().optional(),
       tags: z.array(z.string()).optional(),
       isPublic: z.boolean().optional(),
-      avatarStyle: z.enum(["photorealistic", "animated"]).default("photorealistic"),
+      avatarStyle: z.enum(["photorealistic", "animated"]),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
@@ -148,7 +148,7 @@ export const avatarRouter = createRouter({
         tags: input.tags ?? [],
         isPublic: input.isPublic ?? true,
         isPrimary: (existingCount[0]?.count ?? 0) === 0,
-        avatarStyle: input.avatarStyle ?? "photorealistic",
+        avatarStyle: input.avatarStyle,
       });
 
       return { id: Number(result[0].insertId), imageUrl: input.imageUrl };

@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router'
 import { X, Upload, Lightbulb } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/components/ToastProvider'
 
 const PREDEFINED_TAGS = ['Realistic', 'Anime', '3D', 'Cyberpunk', 'Fantasy', 'Portrait', 'Full Body', 'Editorial']
 
 export default function UploadAvatar() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -26,7 +28,7 @@ export default function UploadAvatar() {
   const [caption, setCaption] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isPublic, setIsPublic] = useState(true)
-  const [avatarStyle, setAvatarStyle] = useState<'photorealistic' | 'animated'>('photorealistic')
+  const [avatarStyle, setAvatarStyle] = useState<'photorealistic' | 'animated' | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<{
@@ -63,6 +65,10 @@ export default function UploadAvatar() {
 
   const handleUpload = async () => {
     if (!preview) return
+    if (!avatarStyle) {
+      showToast('Please select an avatar style: Photorealistic or Animated', 'warning')
+      return
+    }
     setIsUploading(true)
 
     try {
@@ -211,25 +217,28 @@ export default function UploadAvatar() {
         {/* Avatar Style */}
         <div className="mt-5">
           <label className="text-sm font-medium text-white mb-2 block" style={{ fontFamily: 'Outfit' }}>
-            Avatar Style
+            Avatar Style <span className="text-[#EF4444]">*</span>
           </label>
+          <p className="text-xs text-[#AFAFAF] mb-3">
+            Required — select how your avatar was created
+          </p>
           <div className="flex gap-2">
             <button
               onClick={() => setAvatarStyle('photorealistic')}
-              className={`flex-1 h-12 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-1 h-12 rounded-xl text-sm font-medium transition-all border ${
                 avatarStyle === 'photorealistic'
-                  ? 'bg-[#F04F51] text-white'
-                  : 'glass-card text-[#AFAFAF]'
+                  ? 'bg-[#F04F51] text-white border-[#F04F51]'
+                  : 'glass-card text-[#AFAFAF] border-transparent'
               }`}
             >
               Photorealistic
             </button>
             <button
               onClick={() => setAvatarStyle('animated')}
-              className={`flex-1 h-12 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-1 h-12 rounded-xl text-sm font-medium transition-all border ${
                 avatarStyle === 'animated'
-                  ? 'bg-[#F04F51] text-white'
-                  : 'glass-card text-[#AFAFAF]'
+                  ? 'bg-[#F04F51] text-white border-[#F04F51]'
+                  : 'glass-card text-[#AFAFAF] border-transparent'
               }`}
             >
               Animated
