@@ -504,24 +504,24 @@ export default function Discover() {
 
       {/* Fire/Ice Buttons */}
       <div className="shrink-0 px-6 pb-4">
-        <div className="flex items-center justify-center gap-16 h-14">
+        <div className="flex items-center justify-center gap-20 h-16">
           <button
             onClick={() => handleButtonPress('left')}
-            className="text-5xl active:scale-90 transition-transform"
+            className="text-6xl active:scale-90 transition-transform"
             aria-label="Ice"
           >
             🧊
           </button>
           <button
             onClick={() => handleButtonPress('right')}
-            className="text-5xl active:scale-90 transition-transform"
+            className="text-6xl active:scale-90 transition-transform"
             aria-label="Fire"
           >
             🔥
           </button>
         </div>
-        <p className="text-center text-[10px] text-[#AFAFAF] mt-2">
-          Swipe or tap to vote
+        <p className="text-center text-[11px] text-[#AFAFAF] mt-2" style={{ fontFamily: 'Outfit' }}>
+          Select 🔥 or 🧊, then rate this avatar
         </p>
       </div>
 
