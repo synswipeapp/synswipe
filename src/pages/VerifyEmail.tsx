@@ -6,6 +6,7 @@ import { trpc } from '@/providers/trpc'
 
 export default function VerifyEmail() {
   const navigate = useNavigate()
+  const utils = trpc.useUtils()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [verified, setVerified] = useState(false)
@@ -13,8 +14,9 @@ export default function VerifyEmail() {
   const verifyMutation = trpc.localAuth.verifyEmail.useMutation({
     onSuccess: () => {
       setVerified(true)
+      utils.invalidate()
       setTimeout(() => {
-        window.location.href = '/discover'
+        navigate('/discover')
       }, 2000)
     },
     onError: (err) => setError(err.message),

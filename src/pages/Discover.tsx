@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import type { PanInfo } from 'framer-motion'
 import { useNavigate } from 'react-router'
-import { Bell, MessageCircle, Star, Flag } from 'lucide-react'
+import { Bell, Flame, MessageCircle, Star, Flag } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/components/ToastProvider'
@@ -332,12 +332,12 @@ export default function Discover() {
   const utils = trpc.useUtils()
 
   // Welcome toast on first visit after signup
-  useState(() => {
+  useEffect(() => {
     if (sessionStorage.getItem('show_welcome') === 'true') {
       showToast('Welcome to SynSwipe! Start swiping 🔥', 'success')
       sessionStorage.removeItem('show_welcome')
     }
-  })
+  }, [showToast])
 
   const handleStyleChange = (s: StyleFilter) => {
     setStyleFilter(s)

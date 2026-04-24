@@ -40,7 +40,7 @@ export default function Settings() {
       localStorage.removeItem('local_auth_token')
       showToast('Your account has been deleted', 'success')
       setTimeout(() => {
-        window.location.href = '/'
+        navigate('/')
       }, 1500)
     },
     onError: (err) => {

@@ -6,6 +6,7 @@ import { trpc } from '@/providers/trpc'
 
 export default function Login() {
   const navigate = useNavigate()
+  const utils = trpc.useUtils()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -17,7 +18,8 @@ export default function Login() {
   const loginMutation = trpc.localAuth.login.useMutation({
     onSuccess: (data) => {
       localStorage.setItem('local_auth_token', data.token)
-      window.location.href = '/discover'
+      utils.invalidate()
+      navigate('/discover')
     },
     onError: (err) => setError(err.message),
   })
@@ -25,13 +27,14 @@ export default function Login() {
   const registerMutation = trpc.localAuth.register.useMutation({
     onSuccess: (data) => {
       localStorage.setItem('local_auth_token', data.token)
+      utils.invalidate()
       // Store welcome flag for toast on next page
       sessionStorage.setItem('show_welcome', 'true')
       if (data.emailVerificationCode) {
         sessionStorage.setItem('verify_code', data.emailVerificationCode)
         navigate('/verify-email')
       } else {
-        window.location.href = '/discover'
+        navigate('/discover')
       }
     },
     onError: (err) => setError(err.message),
