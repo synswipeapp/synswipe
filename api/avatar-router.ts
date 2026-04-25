@@ -47,6 +47,17 @@ export const avatarRouter = createRouter({
         .limit(limit)
         .offset(offset);
 
+      // Fetch social links for each avatar's creator
+      const socialLinksMap = new Map<number, { platform: string; url: string }[]>();
+      for (const avatar of results) {
+        const links = await db
+          .select({ platform: socialLinks.platform, url: socialLinks.url })
+          .from(socialLinks)
+          .where(eq(socialLinks.userId, avatar.creatorId))
+          .orderBy(socialLinks.sortOrder);
+        socialLinksMap.set(avatar.id, links);
+      }
+
       // Get fire vote counts for each avatar
       const avatarIds = results.map((r) => r.id);
       const fireCounts = await db
@@ -70,6 +81,7 @@ export const avatarRouter = createRouter({
         ...r,
         fireVotes: fireCountMap.get(r.id) ?? 0,
         reviewCount: reviewCountMap.get(r.id) ?? 0,
+        socialLinks: socialLinksMap.get(r.id) ?? [],
       }));
     }),
 

@@ -67,7 +67,7 @@ async function seed() {
     "Runway ready. Always.",
   ];
 
-  const avatarStyles = ["photorealistic", "animated", "photorealistic", "photorealistic", "animated", "photorealistic", "animated", "photorealistic"] as const;
+  const avatarStyles = ["animated", "photorealistic", "animated", "photorealistic", "photorealistic", "photorealistic", "photorealistic", "photorealistic"] as const;
 
   const createdAvatars = [];
   for (let i = 0; i < createdUsers.length; i++) {

@@ -26,6 +26,7 @@ interface CardData {
   creatorBio: string | null
   fireVotes: number
   reviewCount: number
+  socialLinks: { platform: string; url: string }[]
 }
 
 function AvatarCard({
@@ -33,11 +34,13 @@ function AvatarCard({
   index,
   onSwipe,
   onReport,
+  onViewSocials,
 }: {
   card: CardData
   index: number
   onSwipe: (direction: 'left' | 'right') => void
   onReport?: () => void
+  onViewSocials?: () => void
 }) {
   const navigate = useNavigate()
   const x = useMotionValue(0)
@@ -161,19 +164,32 @@ function AvatarCard({
           <p className="text-sm text-[#D9D9D9] line-clamp-1 mb-3">
             {card.creatorBio || card.caption}
           </p>
-          <div className="flex items-center gap-4 text-xs text-[#AFAFAF]">
-            <span className="flex items-center gap-1">
-              <Flame size={14} className="text-orange-500" />
-              {card.fireVotes} fire
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle size={14} />
-              {card.reviewCount} reviews
-            </span>
-            <span className="flex items-center gap-1">
-              <Star size={14} className="text-yellow-400" />
-              4.8
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-xs text-[#AFAFAF]">
+              <span className="flex items-center gap-1">
+                <Flame size={14} className="text-orange-500" />
+                {card.fireVotes} fire
+              </span>
+              <span className="flex items-center gap-1">
+                <MessageCircle size={14} />
+                {card.reviewCount} reviews
+              </span>
+              <span className="flex items-center gap-1">
+                <Star size={14} className="text-yellow-400" />
+                4.8
+              </span>
+            </div>
+            {card.socialLinks.length > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onViewSocials?.()
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[#F04F51]/20 text-[#F04F51] text-xs font-medium active:scale-95 transition-transform"
+              >
+                View Socials
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -318,6 +334,117 @@ function RatingSheet({
   )
 }
 
+function SocialLinksSheet({
+  isOpen,
+  onClose,
+  socialLinks,
+  creatorName,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  socialLinks: { platform: string; url: string }[]
+  creatorName: string | null
+}) {
+  const platformColors: Record<string, string> = {
+    twitter: '#1DA1F2',
+    x: '#1DA1F2',
+    instagram: '#E1306C',
+    tiktok: '#FF0050',
+    youtube: '#FF0000',
+    twitch: '#9146FF',
+    onlyfans: '#00AFF0',
+    patreon: '#FF424D',
+    linktree: '#43E660',
+    website: '#AFAFAF',
+    other: '#AFAFAF',
+  }
+
+  const platformIcons: Record<string, string> = {
+    twitter: '𝕏',
+    x: '𝕏',
+    instagram: '📸',
+    tiktok: '🎵',
+    youtube: '▶️',
+    twitch: '🎮',
+    onlyfans: '👑',
+    patreon: '⭐',
+    linktree: '🌳',
+    website: '🌐',
+    other: '🔗',
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 z-50 flex items-end"
+          onClick={onClose}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="relative w-full bg-[#272727] rounded-t-3xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
+
+            <h3
+              className="text-xl font-bold text-white mb-1 text-center"
+              style={{ fontFamily: 'Outfit' }}
+            >
+              {creatorName ? `${creatorName}'s Socials` : 'Creator Socials'}
+            </h3>
+            <p className="text-sm text-[#AFAFAF] text-center mb-5">
+              Follow and support this creator
+            </p>
+
+            {socialLinks.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-[#AFAFAF] text-sm">No social links added yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {socialLinks.map((link) => (
+                  <a
+                    key={link.platform}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl glass-card active:scale-[0.97] transition-transform"
+                    style={{
+                      borderLeft: `3px solid ${platformColors[link.platform.toLowerCase()] || '#AFAFAF'}`,
+                    }}
+                  >
+                    <span className="text-xl">{platformIcons[link.platform.toLowerCase()] || '🔗'}</span>
+                    <div className="flex-1">
+                      <p className="text-white text-sm font-medium capitalize">{link.platform}</p>
+                      <p className="text-[#AFAFAF] text-xs truncate">{link.url}</p>
+                    </div>
+                    <span className="text-[#F04F51] text-xs font-medium">Open ↗</span>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={onClose}
+              className="w-full mt-5 h-12 text-[#AFAFAF] text-sm font-medium rounded-2xl active:scale-[0.97] transition-transform glass-card"
+            >
+              Close
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 export default function Discover() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
@@ -326,6 +453,9 @@ export default function Discover() {
   const [pendingVerdict, setPendingVerdict] = useState<Verdict>(null)
   const [pendingAvatarId, setPendingAvatarId] = useState<number | null>(null)
   const [showRatingSheet, setShowRatingSheet] = useState(false)
+  const [showSocialSheet, setShowSocialSheet] = useState(false)
+  const [activeSocialLinks, setActiveSocialLinks] = useState<{ platform: string; url: string }[]>([])
+  const [activeCreatorName, setActiveCreatorName] = useState<string | null>(null)
   const [reportAvatarId, setReportAvatarId] = useState<number | null>(null)
   const [showReportModal, setShowReportModal] = useState(false)
   const { showToast } = useToast()
@@ -472,6 +602,11 @@ export default function Discover() {
                   setReportAvatarId(card.id)
                   setShowReportModal(true)
                 } : undefined}
+                onViewSocials={i === 0 ? () => {
+                  setActiveSocialLinks(card.socialLinks)
+                  setActiveCreatorName(card.creatorName)
+                  setShowSocialSheet(true)
+                } : undefined}
               />
             ))}
           </AnimatePresence>
@@ -521,6 +656,14 @@ export default function Discover() {
         onClose={handleSkipRating}
         onSubmit={handleRatingSubmit}
         verdict={pendingVerdict}
+      />
+
+      {/* Social Links Sheet */}
+      <SocialLinksSheet
+        isOpen={showSocialSheet}
+        onClose={() => setShowSocialSheet(false)}
+        socialLinks={activeSocialLinks}
+        creatorName={activeCreatorName}
       />
 
       {/* Report Modal */}
