@@ -248,8 +248,15 @@ export default function Profile() {
                   <img
                     src={avatar.imageUrl}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover ${!avatar.isApproved ? 'opacity-60' : ''}`}
                   />
+                  {!avatar.isApproved && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="px-3 py-1.5 rounded-lg bg-yellow-500/90 text-white text-xs font-bold">
+                        Pending Approval
+                      </span>
+                    </div>
+                  )}
                   <button
                     onClick={() => handleDeleteAvatar(avatar.id)}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"

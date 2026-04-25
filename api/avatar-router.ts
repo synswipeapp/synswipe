@@ -41,6 +41,7 @@ export const avatarRouter = createRouter({
         .leftJoin(localUsers, eq(avatars.creatorId, localUsers.id))
         .where(and(
           eq(avatars.isPublic, true),
+          eq(avatars.isApproved, true),
           styleFilter,
         ))
         .orderBy(desc(avatars.createdAt))
@@ -165,6 +166,7 @@ export const avatarRouter = createRouter({
         isPublic: input.isPublic ?? true,
         isPrimary: (existingCount[0]?.count ?? 0) === 0,
         avatarStyle: input.avatarStyle,
+        isApproved: false, // Requires admin approval before going live
       });
 
       // Auto-enable creator mode on first upload (try both tables)

@@ -3,7 +3,8 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router'
 import {
   ArrowLeft, Users, Image, Star, MessageSquare, Flag,
-  CreditCard, AlertTriangle, CheckCircle, Eye, EyeOff, Trash2
+  CreditCard, AlertTriangle, CheckCircle, Eye, EyeOff, Trash2,
+  Shield, XCircle
 } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,17 +12,20 @@ import { useAuth } from '@/hooks/useAuth'
 export default function Admin() {
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
-  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'avatars' | 'users'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'moderation' | 'reports' | 'avatars' | 'users'>('overview')
 
   const { data: stats } = trpc.admin.stats.useQuery(undefined, { enabled: isAdmin })
   const { data: reports } = trpc.admin.reports.useQuery(undefined, { enabled: isAdmin && activeTab === 'reports' })
   const { data: allAvatars } = trpc.admin.avatars.useQuery(undefined, { enabled: isAdmin && activeTab === 'avatars' })
   const { data: allUsers } = trpc.admin.users.useQuery(undefined, { enabled: isAdmin && activeTab === 'users' })
+  const { data: pendingAvatars } = trpc.admin.pendingAvatars.useQuery(undefined, { enabled: isAdmin && activeTab === 'moderation' })
 
   const utils = trpc.useUtils()
   const updateReport = trpc.admin.updateReport.useMutation({ onSuccess: () => utils.admin.reports.invalidate() })
   const toggleAvatar = trpc.admin.toggleAvatarPublic.useMutation({ onSuccess: () => utils.admin.avatars.invalidate() })
   const deleteAvatar = trpc.admin.deleteAvatar.useMutation({ onSuccess: () => { utils.admin.avatars.invalidate(); utils.admin.stats.invalidate(); } })
+  const approveAvatar = trpc.admin.approveAvatar.useMutation({ onSuccess: () => { utils.admin.pendingAvatars.invalidate(); utils.admin.avatars.invalidate(); utils.admin.stats.invalidate(); } })
+  const rejectAvatar = trpc.admin.rejectAvatar.useMutation({ onSuccess: () => { utils.admin.pendingAvatars.invalidate(); utils.admin.avatars.invalidate(); utils.admin.stats.invalidate(); } })
 
   if (!isAdmin) {
     return (
@@ -38,6 +42,7 @@ export default function Admin() {
 
   const tabs = [
     { key: 'overview', label: 'Overview', icon: Star },
+    { key: 'moderation', label: 'Moderation', icon: Shield },
     { key: 'reports', label: 'Reports', icon: Flag },
     { key: 'avatars', label: 'Avatars', icon: Image },
     { key: 'users', label: 'Users', icon: Users },
@@ -70,6 +75,9 @@ export default function Admin() {
               >
                 <Icon size={14} />
                 {t.label}
+                {t.key === 'moderation' && pendingAvatars && pendingAvatars.length > 0 && (
+                  <span className="bg-[#EF4444] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{pendingAvatars.length}</span>
+                )}
                 {t.key === 'reports' && stats && stats.pendingReports > 0 && (
                   <span className="bg-[#EF4444] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{stats.pendingReports}</span>
                 )}
@@ -86,10 +94,11 @@ export default function Admin() {
             {[
               { label: 'Users', value: stats.totalUsers, icon: Users, color: '#60A5FA' },
               { label: 'Avatars', value: stats.totalAvatars, icon: Image, color: '#4ADE80' },
+              { label: 'Pending', value: stats.pendingAvatars ?? 0, icon: Shield, color: '#FBBF24' },
               { label: 'Ratings', value: stats.totalRatings, icon: Star, color: '#F04F51' },
               { label: 'Reviews', value: stats.totalReviews, icon: MessageSquare, color: '#FB6F87' },
               { label: 'Reports', value: stats.totalReports, icon: Flag, color: '#EF4444' },
-              { label: 'Subscriptions', value: stats.activeSubscriptions, icon: CreditCard, color: '#FBBF24' },
+              { label: 'Subscriptions', value: stats.activeSubscriptions, icon: CreditCard, color: '#A78BFA' },
             ].map((s) => {
               const Icon = s.icon
               return (
@@ -100,6 +109,54 @@ export default function Admin() {
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* ─── MODERATION QUEUE ─── */}
+        {activeTab === 'moderation' && pendingAvatars && (
+          <div className="space-y-3">
+            {pendingAvatars.length === 0 && (
+              <div className="text-center py-12">
+                <Shield size={48} className="text-[#4ADE80] mx-auto mb-3" />
+                <p className="text-white font-semibold mb-1">All Clear</p>
+                <p className="text-sm text-[#AFAFAF]">No avatars pending approval</p>
+              </div>
+            )}
+            {pendingAvatars.map((a) => (
+              <div key={a.id} className="glass-card rounded-xl overflow-hidden">
+                <div className="relative aspect-[4/5] max-h-[320px]">
+                  <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute top-3 left-3 flex gap-2">
+                    <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-yellow-500/90 text-white">
+                      PENDING
+                    </span>
+                    <span className={`px-2 py-1 rounded-lg text-[10px] font-medium ${
+                      a.avatarStyle === 'photorealistic' ? 'bg-green-500/80 text-white' : 'bg-blue-500/80 text-white'
+                    }`}>
+                      {a.avatarStyle?.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <p className="text-sm text-white font-medium mb-1 truncate">{a.caption || 'Untitled'}</p>
+                  <p className="text-[10px] text-[#AFAFAF] mb-3">Submitted {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : 'recently'}</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => approveAvatar.mutate({ id: a.id })}
+                      className="flex-1 h-10 bg-[#4ADE80] text-white text-sm font-bold rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle size={16} /> Approve
+                    </button>
+                    <button
+                      onClick={() => { if (confirm('Reject and delete this avatar?')) rejectAvatar.mutate({ id: a.id }) }}
+                      className="flex-1 h-10 bg-[#EF4444]/20 text-[#EF4444] text-sm font-bold rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5"
+                    >
+                      <XCircle size={16} /> Reject
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

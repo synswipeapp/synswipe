@@ -15,6 +15,7 @@ export const adminRouter = createRouter({
     const [reviewCount] = await db.select({ count: sql<number>`count(*)` }).from(reviews);
     const [reportCount] = await db.select({ count: sql<number>`count(*)` }).from(reports);
     const [pendingReports] = await db.select({ count: sql<number>`count(*)` }).from(reports).where(eq(reports.status, "pending"));
+    const [pendingAvatarsCount] = await db.select({ count: sql<number>`count(*)` }).from(avatars).where(eq(avatars.isApproved, false));
     const [subCount] = await db.select({ count: sql<number>`count(*)` }).from(subscriptions);
 
     return {
@@ -24,6 +25,7 @@ export const adminRouter = createRouter({
       totalReviews: reviewCount?.count ?? 0,
       totalReports: reportCount?.count ?? 0,
       pendingReports: pendingReports?.count ?? 0,
+      pendingAvatars: pendingAvatarsCount?.count ?? 0,
       activeSubscriptions: subCount?.count ?? 0,
     };
   }),
@@ -118,6 +120,43 @@ export const adminRouter = createRouter({
       // Delete reviews
       await db.delete(reviews).where(eq(reviews.avatarId, input.id));
       // Delete avatar
+      await db.delete(avatars).where(eq(avatars.id, input.id));
+      return { success: true };
+    }),
+
+  pendingAvatars: adminQuery.query(async () => {
+    const db = getDb();
+
+    return db
+      .select({
+        id: avatars.id,
+        creatorId: avatars.creatorId,
+        imageUrl: avatars.imageUrl,
+        caption: avatars.caption,
+        avatarStyle: avatars.avatarStyle,
+        createdAt: avatars.createdAt,
+        isApproved: avatars.isApproved,
+      })
+      .from(avatars)
+      .where(eq(avatars.isApproved, false))
+      .orderBy(desc(avatars.createdAt));
+  }),
+
+  approveAvatar: adminQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db.update(avatars).set({ isApproved: true }).where(eq(avatars.id, input.id));
+      return { success: true };
+    }),
+
+  rejectAvatar: adminQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      // Same as delete — remove the avatar entirely
+      await db.delete(ratings).where(eq(ratings.avatarId, input.id));
+      await db.delete(reviews).where(eq(reviews.avatarId, input.id));
       await db.delete(avatars).where(eq(avatars.id, input.id));
       return { success: true };
     }),

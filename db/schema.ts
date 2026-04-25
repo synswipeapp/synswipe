@@ -42,10 +42,12 @@ export const avatars = mysqlTable("avatars", {
   isPrimary: boolean("is_primary").default(false),
   qualityScore: int("quality_score"),
   avatarStyle: mysqlEnum("avatar_style", ["photorealistic", "animated"]).default("photorealistic").notNull(),
+  isApproved: boolean("is_approved").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_avatars_creator").on(table.creatorId, table.isPublic),
   index("idx_avatars_style").on(table.avatarStyle, table.isPublic),
+  index("idx_avatars_approved").on(table.isApproved, table.isPublic),
 ]);
 
 export type Avatar = typeof avatars.$inferSelect;

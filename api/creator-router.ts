@@ -29,11 +29,20 @@ export const creatorRouter = createRouter({
 
       if (!user) return null;
 
-      // Get user's avatars
+      // Get user's avatars (including pending for the owner to see)
       const userAvatars = await db
-        .select()
+        .select({
+          id: avatars.id,
+          imageUrl: avatars.imageUrl,
+          caption: avatars.caption,
+          isPublic: avatars.isPublic,
+          isPrimary: avatars.isPrimary,
+          avatarStyle: avatars.avatarStyle,
+          isApproved: avatars.isApproved,
+          createdAt: avatars.createdAt,
+        })
         .from(avatars)
-        .where(and(eq(avatars.creatorId, user.id), eq(avatars.isPublic, true)))
+        .where(eq(avatars.creatorId, user.id))
         .orderBy(sql`${avatars.isPrimary} DESC, ${avatars.createdAt} DESC`);
 
       // Get social links
