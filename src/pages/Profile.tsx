@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import {
   Camera, ToggleLeft, ToggleRight, Flame, Eye, Star, MousePointer,
-  Plus, Trash2, LogOut, ChevronRight, Crown, BarChart3, Share2, Shield
+  Plus, Trash2, LogOut, ChevronRight, Crown, BarChart3, Share2, Shield,
+  Pencil, X
 } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
@@ -12,6 +14,11 @@ export default function Profile() {
   const navigate = useNavigate()
   const { user, logout, isAdmin } = useAuth()
   const utils = trpc.useUtils()
+
+  const [editAvatarId, setEditAvatarId] = useState<number | null>(null)
+  const [editCaption, setEditCaption] = useState('')
+  const [editStyle, setEditStyle] = useState<'photorealistic' | 'animated'>('photorealistic')
+  const [showEditSheet, setShowEditSheet] = useState(false)
 
   const { data: stats } = trpc.creator.getStats.useQuery(undefined, {
     enabled: !!user,
@@ -39,8 +46,23 @@ export default function Profile() {
     },
   })
 
+  const editAvatar = trpc.avatar.editAvatar.useMutation({
+    onSuccess: () => {
+      utils.creator.getProfile.invalidate()
+      setShowEditSheet(false)
+      setEditAvatarId(null)
+    },
+  })
+
   const handleToggleCreatorMode = () => {
     updateProfile.mutate({ creatorMode: !user?.creatorMode })
+  }
+
+  const openEditSheet = (avatar: { id: number; caption: string | null; avatarStyle: string }) => {
+    setEditAvatarId(avatar.id)
+    setEditCaption(avatar.caption ?? '')
+    setEditStyle(avatar.avatarStyle as 'photorealistic' | 'animated')
+    setShowEditSheet(true)
   }
 
   const handleDeleteAvatar = (id: number) => {
@@ -258,6 +280,12 @@ export default function Profile() {
                     </div>
                   )}
                   <button
+                    onClick={() => openEditSheet(avatar)}
+                    className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Pencil size={14} className="text-white" />
+                  </button>
+                  <button
                     onClick={() => handleDeleteAvatar(avatar.id)}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
@@ -328,6 +356,92 @@ export default function Profile() {
           </div>
         </motion.div>
       </div>
+
+      {/* Edit Avatar Sheet */}
+      {showEditSheet && editAvatarId && (
+        <div className="absolute inset-0 z-50 flex items-end">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowEditSheet(false)} />
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="relative w-full bg-[#272727] rounded-t-3xl p-6"
+          >
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
+
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'Outfit' }}>
+                Edit Avatar
+              </h3>
+              <button onClick={() => setShowEditSheet(false)}>
+                <X size={20} className="text-[#AFAFAF]" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-[#AFAFAF] mb-1.5 block">Caption</label>
+                <input
+                  type="text"
+                  value={editCaption}
+                  onChange={(e) => setEditCaption(e.target.value)}
+                  placeholder="Describe your avatar..."
+                  className="w-full h-12 glass-card rounded-xl px-4 text-white text-sm placeholder:text-[#AFAFAF]/50 focus:outline-none focus:border-[#F04F51]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#AFAFAF] mb-1.5 block">Style</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditStyle('photorealistic')}
+                    className={`flex-1 h-12 rounded-xl text-sm font-medium transition-all border ${
+                      editStyle === 'photorealistic'
+                        ? 'bg-[#F04F51] text-white border-[#F04F51]'
+                        : 'glass-card text-[#AFAFAF] border-transparent'
+                    }`}
+                  >
+                    Photorealistic
+                  </button>
+                  <button
+                    onClick={() => setEditStyle('animated')}
+                    className={`flex-1 h-12 rounded-xl text-sm font-medium transition-all border ${
+                      editStyle === 'animated'
+                        ? 'bg-[#F04F51] text-white border-[#F04F51]'
+                        : 'glass-card text-[#AFAFAF] border-transparent'
+                    }`}
+                  >
+                    Animated
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  editAvatar.mutate({
+                    id: editAvatarId,
+                    caption: editCaption || undefined,
+                    avatarStyle: editStyle,
+                  })
+                }}
+                disabled={editAvatar.isPending}
+                className="w-full h-12 bg-[#F04F51] text-white font-bold rounded-full text-base disabled:opacity-40 active:scale-95 transition-transform"
+                style={{ fontFamily: 'Outfit' }}
+              >
+                {editAvatar.isPending ? 'Saving...' : 'Save Changes'}
+              </button>
+
+              <button
+                onClick={() => setShowEditSheet(false)}
+                className="w-full h-12 text-[#AFAFAF] font-medium rounded-full text-sm active:scale-95 transition-transform"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   )
 }

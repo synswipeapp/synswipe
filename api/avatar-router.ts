@@ -228,6 +228,36 @@ export const avatarRouter = createRouter({
       return { success: true };
     }),
 
+  editAvatar: authedQuery
+    .input(z.object({
+      id: z.number(),
+      caption: z.string().max(500).optional(),
+      avatarStyle: z.enum(["photorealistic", "animated"]).optional(),
+      isPublic: z.boolean().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+
+      // Verify ownership
+      const [avatar] = await db
+        .select()
+        .from(avatars)
+        .where(eq(avatars.id, input.id))
+        .limit(1);
+
+      if (!avatar) throw new Error("Avatar not found");
+      if (avatar.creatorId !== ctx.user.id) throw new Error("Not authorized");
+
+      const updateData: Record<string, unknown> = {};
+      if (input.caption !== undefined) updateData.caption = input.caption;
+      if (input.avatarStyle !== undefined) updateData.avatarStyle = input.avatarStyle;
+      if (input.isPublic !== undefined) updateData.isPublic = input.isPublic;
+
+      await db.update(avatars).set(updateData).where(eq(avatars.id, input.id));
+
+      return { success: true };
+    }),
+
   getCreatorAvatars: publicQuery
     .input(z.object({ creatorId: z.number() }))
     .query(async ({ input }) => {
