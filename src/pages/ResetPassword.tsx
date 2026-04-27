@@ -106,7 +106,7 @@ export default function ResetPassword() {
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="At least 6 characters"
+                    placeholder="Min 8: Abc12345"
                     className="w-full h-12 glass-card rounded-xl px-4 pr-12 text-white text-sm placeholder:text-[#AFAFAF]/50 focus:outline-none focus:border-[#F04F51]"
                   />
                   <button
@@ -117,6 +117,9 @@ export default function ResetPassword() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                <p className="text-[11px] text-[#AFAFAF]/60 mt-1.5">
+                  At least 8 characters with uppercase, lowercase, and a number
+                </p>
               </div>
 
               <div>

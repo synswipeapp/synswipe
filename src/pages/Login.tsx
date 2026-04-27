@@ -139,7 +139,7 @@ export default function Login() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
+                placeholder={mode === 'register' ? 'Min 8 chars: Abc12345' : 'Enter password'}
                 className="w-full h-12 glass-card rounded-xl px-4 pr-12 text-white text-sm placeholder:text-[#AFAFAF] focus:outline-none focus:border-[#F04F51]"
               />
               <button
@@ -150,6 +150,11 @@ export default function Login() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            {mode === 'register' && (
+              <p className="text-[11px] text-[#AFAFAF]/60 mt-1.5">
+                At least 8 characters with uppercase, lowercase, and a number
+              </p>
+            )}
           </div>
 
           {error && (

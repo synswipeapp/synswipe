@@ -5,6 +5,7 @@ import { localUsers, passwordResets, emailVerifications, avatars, ratings, revie
 import { eq, and, gt } from "drizzle-orm";
 import { SignJWT, jwtVerify } from "jose";
 import { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } from "./email-service";
+import bcrypt from "bcryptjs";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "avatarrate-local-secret-key-2024");
 
@@ -25,13 +26,25 @@ function checkRateLimit(key: string, maxRequests: number, windowMs: number): boo
   return true;
 }
 
-// ─── Helpers ───
+// ─── Password Hashing (bcrypt) ───
+const BCRYPT_ROUNDS = 12;
+
 async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
+}
+
+async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  // If hash starts with $2, it's bcrypt
+  if (storedHash.startsWith("$2")) {
+    return bcrypt.compare(password, storedHash);
+  }
+  // Legacy SHA-256 hash — verify with old method for migration
   const encoder = new TextEncoder();
   const data = encoder.encode(password + "avatarrate-salt");
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  const legacyHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  return storedHash === legacyHash;
 }
 
 function generateCode(length: number): string {
@@ -65,7 +78,7 @@ export const localAuthRouter = createRouter({
   register: publicQuery
     .input(z.object({
       username: z.string().min(3).max(100),
-      password: z.string().min(6).max(100),
+      password: z.string().min(8).max(100).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
       displayName: z.string().max(255).optional(),
       handle: z.string().max(50).optional(),
       email: z.string().email().optional(),
@@ -150,8 +163,14 @@ export const localAuthRouter = createRouter({
       const [user] = await db.select().from(localUsers).where(eq(localUsers.username, input.username)).limit(1);
       if (!user) throw new Error("Invalid username or password");
 
-      const passwordHash = await hashPassword(input.password);
-      if (user.passwordHash !== passwordHash) throw new Error("Invalid username or password");
+      const isValid = await verifyPassword(input.password, user.passwordHash);
+      if (!isValid) throw new Error("Invalid username or password");
+
+      // Transparent migration: if old SHA-256 hash, re-hash with bcrypt
+      if (!user.passwordHash.startsWith("$2")) {
+        const newHash = await hashPassword(input.password);
+        await db.update(localUsers).set({ passwordHash: newHash }).where(eq(localUsers.id, user.id));
+      }
 
       const token = await createToken(user.id);
 
@@ -324,7 +343,7 @@ export const localAuthRouter = createRouter({
     }),
 
   resetPassword: publicQuery
-    .input(z.object({ token: z.string().min(1), newPassword: z.string().min(6) }))
+    .input(z.object({ token: z.string().min(1), newPassword: z.string().min(8).max(100).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number") }))
     .mutation(async ({ input }) => {
       const db = getDb();
 
