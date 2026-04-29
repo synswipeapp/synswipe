@@ -5,7 +5,6 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
-import { createOAuthCallbackHandler } from "./kimi/auth";
 import { webhookRouter } from "./webhook-router";
 import { Paths } from "@contracts/constants";
 
@@ -13,8 +12,9 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 
-// Only enable OAuth if configured
+// Only enable OAuth if configured (lazy import to avoid SDK initialization when not needed)
 if (env.appId && env.appSecret) {
+  const { createOAuthCallbackHandler } = await import("./kimi/auth");
   app.get(Paths.oauthCallback, createOAuthCallbackHandler());
 }
 
