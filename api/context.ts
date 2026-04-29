@@ -1,6 +1,5 @@
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import type { User } from "@db/schema";
-import { authenticateRequest } from "./kimi/auth";
 import { verifyLocalToken } from "./local-auth-router";
 import { getDb } from "./queries/connection";
 import { localUsers } from "@db/schema";
@@ -17,8 +16,9 @@ export async function createContext(
 ): Promise<TrpcContext> {
   const ctx: TrpcContext = { req: opts.req, resHeaders: opts.resHeaders };
 
-  // Try OAuth first
+  // Try OAuth first (lazy import to prevent SDK initialization when not configured)
   try {
+    const { authenticateRequest } = await import("./kimi/auth");
     ctx.user = await authenticateRequest(opts.req.headers);
   } catch {
     // OAuth not available, try local auth
