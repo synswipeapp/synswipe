@@ -11,7 +11,9 @@ import { Paths } from "@contracts/constants";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 if (env.appId && env.appSecret) {
+if (env.appId && env.appSecret) {
   app.get(Paths.oauthCallback, createOAuthCallbackHandler());
+}
 }
     endpoint: "/api/trpc",
     req: c.req.raw,
