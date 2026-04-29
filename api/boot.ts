@@ -10,11 +10,17 @@ import { webhookRouter } from "./webhook-router";
 import { Paths } from "@contracts/constants";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
-if (env.appId && env.appSecret) {
+
+app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
+
+// Only enable OAuth if configured
 if (env.appId && env.appSecret) {
   app.get(Paths.oauthCallback, createOAuthCallbackHandler());
 }
-}
+
+// tRPC API handler
+app.use("/api/trpc/*", async (c) => {
+  return fetchRequestHandler({
     endpoint: "/api/trpc",
     req: c.req.raw,
     router: appRouter,
